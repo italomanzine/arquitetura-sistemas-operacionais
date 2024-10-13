@@ -1,0 +1,33 @@
+# Ignorar todos os arquivos executáveis
+*.exe
+*.out
+*.o
+*.a
+*.so
+*.dll
+*.dylib
+
+# Ignorar diretórios de build
+/build/
+/bin/
+/obj/
+/Debug/
+/Release/
+
+# Ignorar arquivos de log
+*.log
+
+# Ignorar arquivos temporários
+*.tmp
+*.temp
+*.swp
+*.swo
+
+# Ignorar arquivos de backup
+*.bak
+*.old
+*.orig
+
+# Ignorar arquivos gerados pelo sistema
+.DS_Store
+Thumbs.db
