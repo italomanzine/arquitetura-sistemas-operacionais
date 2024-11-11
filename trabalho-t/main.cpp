@@ -56,6 +56,7 @@ TEST(FsTest, case7){
     duplicate("fs-case7.bin", "fs-case7.bin.solucao");
 
     remove("fs-case7.bin.solucao", "/dec7556/t2.txt");
+    std::cout << "hash gerado"<< printSha256("fs-case7.bin.solucao") << std::endl << "hash esperado" << std::string("67:0C:FE:30:78:13:BE:83:11:47:66:10:19:D2:B8:8F:39:B3:B1:F7:A2:E6:E1:ED:49:ED:1F:11:84:02:B2:B7") << std::endl;
     ASSERT_EQ(printSha256("fs-case7.bin.solucao"),std::string("67:0C:FE:30:78:13:BE:83:11:47:66:10:19:D2:B8:8F:39:B3:B1:F7:A2:E6:E1:ED:49:ED:1F:11:84:02:B2:B7"));
 }
 

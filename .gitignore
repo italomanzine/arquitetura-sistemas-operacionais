@@ -6,6 +6,8 @@
 *.so
 *.dll
 *.dylib
+*.code-workspace
+*.pdf
 
 # Ignorar diretórios de build
 /build/

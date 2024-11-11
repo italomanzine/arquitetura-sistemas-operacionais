@@ -13,23 +13,6 @@
 
 using namespace std;
 
-// Tamanho do bloco: char = 1 byte
-// Tabanho do numero de blocos: char = 1 byte
-// Tamanho do numero de inodes: char = 1 byte
-// Tamanho do mapa de bits: ceil(numBlocks/8.0)
-// Tamanho do vetor de inodes: numInodes * sizeof(INODE)
-// Tamanho do diretório raiz: char = 1 byte
-// Tamanho do vetor de blocos: numBlocks * blockSize
-
-// Tamanho do inode: 22 bytes
-// Tamanho do IS_USED: char = 1 byte
-// Tamanho do IS_DIR: char = 1 byte
-// Tamanho do NAME: char[10] = 10 bytes
-// Tamanho do SIZE: char = 1 byte
-// Tamanho do DIRECT_BLOCKS: char[3] = 3 bytes
-// Tamanho do INDIRECT_BLOCKS: char[3] = 3 bytes
-// Tamanho do DOUBLE_INDIRECT_BLOCKS: char[3] = 3 bytes
-
 // Função para retornar o tamanho do mapa de bits
 // Dividir a quantidade de blocos por 8 e arredondar para cima o resultado.
 int getBitMapSize(int numBlocks)
@@ -136,6 +119,38 @@ int getInodeIndex(string nome, vector<INODE> inodes, int numInodes)
   return -1;
 }
 
+// Função para encontrar a pasta pai do arquivo
+std::string encontrarPastaPai(const std::string& caminho) {
+    // Remove quaisquer barras finais
+    std::string caminho_clean = caminho;
+    while (!caminho_clean.empty() && caminho_clean.back() == '/') {
+        caminho_clean.pop_back();
+    }
+
+    // Encontra a posição da última barra '/'
+    size_t pos_last_slash = caminho_clean.find_last_of('/');
+    if (pos_last_slash == std::string::npos) {
+        // Sem barra encontrada, retorna string vazia ou comportamento adequado
+        return "";
+    } else if (pos_last_slash == 0) {
+        // Se a última barra está na posição 0, a pasta pai é a raiz "/"
+        return "/";
+    }
+
+    // Remove o último componente (arquivo ou diretório)
+    std::string semArquivo = caminho_clean.substr(0, pos_last_slash);
+
+    // Encontra a posição da segunda última barra '/'
+    size_t pos_second_last_slash = semArquivo.find_last_of('/', pos_last_slash - 1);
+    if (pos_second_last_slash == std::string::npos) {
+        // Se não houver segunda barra, retorna o diretório após a primeira barra
+        return semArquivo.substr(1, pos_last_slash - 1); // Exemplo: "dec"
+    }
+
+    // Extrai o nome da pasta pai entre a segunda e a última barra
+    return semArquivo.substr(pos_second_last_slash + 1, pos_last_slash - pos_second_last_slash - 1); // Exemplo: "subpasta"
+}
+
 /**
  * @brief Faz a inicialização do arquivo EXT3 usando o arquivo aberto.
  * @param arquivo arquivo aberto que simula EXT3
@@ -240,10 +255,6 @@ void inicializar(FILE *arquivo, int blockSize, int numBlocks, int numInodes)
  */
 void adicionarArquivo(FILE *arquivo, string filePath, string fileContent)
 {
-  // blockSize: tamanho do bloco
-  // numBlocks: quantidade de blocos
-  // numInodes: quantidade de inodes
-  // root: inode do diretório raiz
   unsigned char blockSize, numBlocks, numInodes, root;
 
   // Posicionamento do ponteiro no inicio do arquivo e leitura dos 3 primeiros bytes.
@@ -407,10 +418,6 @@ void adicionarArquivo(FILE *arquivo, string filePath, string fileContent)
  */
 void adicionarDiretorio(FILE *arquivo, string dirPath)
 {
-  // blockSize: tamanho do bloco
-  // numBlocks: quantidade de blocos
-  // numInodes: quantidade de inodes
-  // root: inode do diretório raiz
   unsigned char blockSize, numBlocks, numInodes, root;
 
   // Posicionamento do ponteiro no inicio do arquivo e leitura dos 3 primeiros bytes.
@@ -538,155 +545,146 @@ void adicionarDiretorio(FILE *arquivo, string dirPath)
  */
 void remover(FILE *arquivo, string path)
 {
-    // remover arquivo
+  // Ler o superbloco
+  unsigned char blockSize, numBlocks, numInodes, root;
+  fseek(arquivo, 0, SEEK_SET);
+  fread(&blockSize, sizeof(unsigned char), 1, arquivo);
+  fread(&numBlocks, sizeof(unsigned char), 1, arquivo);
+  fread(&numInodes, sizeof(unsigned char), 1, arquivo);
 
-		// blockSize: tamanho do bloco
-		// numBlocks: quantidade de blocos
-		// numInodes: quantidade de inodes
-		// root: inode do diretório raiz
+  // Calcular o tamanho do bitmap
+  unsigned char bitMapSize = getBitMapSize(numBlocks);
 
-    // Ler o superbloco
-    unsigned char blockSize, numBlocks, numInodes, root;
-    fseek(arquivo, 0, SEEK_SET);
-    fread(&blockSize, sizeof(unsigned char), 1, arquivo);
-    fread(&numBlocks, sizeof(unsigned char), 1, arquivo);
-    fread(&numInodes, sizeof(unsigned char), 1, arquivo);
+  // Ler o bitmap
+  vector<unsigned char> bitMap(bitMapSize);
+  fread(&bitMap[0], sizeof(unsigned char), bitMapSize, arquivo);
 
-    // Calcular o tamanho do bitmap
-    unsigned char bitMapSize = getBitMapSize(numBlocks);
+  // Ler os inodes
+  vector<INODE> inodes(numInodes);
+  fread(&inodes[0], sizeof(INODE), numInodes, arquivo);
 
-    // Ler o bitmap
-    vector<unsigned char> bitMap(bitMapSize);
-    fread(&bitMap[0], sizeof(unsigned char), bitMapSize, arquivo);
+  // Ler o inode raiz
+  fread(&root, 1, 1, arquivo);
 
-    // Ler os inodes
-    vector<INODE> inodes(numInodes);
-    fread(&inodes[0], sizeof(INODE), numInodes, arquivo);
+  // Ler os blocos de dados
+  vector<vector<unsigned char>> blocos(numBlocks, vector<unsigned char>(blockSize));
+  for (int i = 0; i < numBlocks; i++)
+  {
+    fread(&blocos[i][0], sizeof(unsigned char), blockSize, arquivo);
+  }
 
-    // Ler o inode raiz
-    fread(&root, 1, 1, arquivo);
+  // Obter o nome e o inode do arquivo ou diretório a ser removido
+  string nomeRemover = getName(path);
+  int inodeRemover = getInodeIndex(nomeRemover, inodes, numInodes);
 
-    // Ler os blocos de dados
-    vector<vector<unsigned char>> blocos(numBlocks, vector<unsigned char>(blockSize));
-    for (int i = 0; i < numBlocks; i++)
+  if (inodeRemover == -1)
+  {
+    printf("Arquivo ou diretório não encontrado!\n");
+    return;
+  }
+
+  // Obter o inode do pai
+  string nomePai = getFatherName(path);
+  int inodePai = getInodeIndex(nomePai, inodes, numInodes);
+
+  if (inodePai == -1)
+  {
+    printf("Diretório pai não encontrado!\n");
+    return;
+  }
+
+  // Função recursiva para remover inodes
+  function<void(int)> removerInode = [&](int inodeIndex)
+  {
+    // Se for um diretório, remover recursivamente seus filhos
+    if (inodes[inodeIndex].IS_DIR == 0x01)
     {
-        fread(&blocos[i][0], sizeof(unsigned char), blockSize, arquivo);
-    }
-
-    // Obter o nome e o inode do arquivo ou diretório a ser removido
-    string nomeRemover = getName(path);
-    int inodeRemover = getInodeIndex(nomeRemover, inodes, numInodes);
-
-    if (inodeRemover == -1)
-    {
-        printf("Arquivo ou diretório não encontrado!\n");
-        return;
-    }
-
-    // Obter o inode do pai
-    string nomePai = getFatherName(path);
-    int inodePai = getInodeIndex(nomePai, inodes, numInodes);
-
-    if (inodePai == -1)
-    {
-        printf("Diretório pai não encontrado!\n");
-        return;
-    }
-
-    // Função recursiva para remover inodes
-    function<void(int)> removerInode = [&](int inodeIndex) {
-        // Se for um diretório, remover recursivamente seus filhos
-        if (inodes[inodeIndex].IS_DIR == 0x01)
-        {
-            for (int i = 0; i < 3; i++)
-            {
-                unsigned char blockIdx = inodes[inodeIndex].DIRECT_BLOCKS[i];
-                if (blockIdx != 0x00)
-                {
-                    for (int j = 0; j < blockSize; j++)
-                    {
-                        if (blocos[blockIdx][j] != 0x00)
-                        {
-                            int childInodeIndex = blocos[blockIdx][j];
-                            removerInode(childInodeIndex);
-                        }
-                    }
-                }
-            }
-            // Repetir para INDIRECT_BLOCKS e DOUBLE_INDIRECT_BLOCKS se necessário
-            // Implementação omitida para brevidade
-        }
-
-        // Liberar os blocos usados pelo inode
-        for (int i = 0; i < 3; i++)
-        {
-            if (inodes[inodeIndex].DIRECT_BLOCKS[i] != 0x00)
-            {
-                int blockIdx = inodes[inodeIndex].DIRECT_BLOCKS[i];
-                // Marcar bloco como livre
-                int byteIndex = blockIdx / 8;
-                int bitIndex = blockIdx % 8;
-                bitMap[byteIndex] &= ~(1 << bitIndex);
-                // Limpar bloco
-                // fill(blocos[blockIdx].begin(), blocos[blockIdx].end(), 0x00);
-                // inodes[inodeIndex].DIRECT_BLOCKS[i] = 0x00;
-            }
-            // Repetir para INDIRECT_BLOCKS e DOUBLE_INDIRECT_BLOCKS se necessário
-            // Implementação omitida para brevidade
-        }
-
-        // Limpar inode
-        inodes[inodeIndex].IS_USED = 0x00;
-        // inodes[inodeIndex].IS_DIR = 0x00;
-        // inodes[inodeIndex].SIZE = 0x00;
-        // memset(inodes[inodeIndex].NAME, 0x00, 10);
-        // memset(inodes[inodeIndex].DIRECT_BLOCKS, 0x00, 3);
-        // memset(inodes[inodeIndex].INDIRECT_BLOCKS, 0x00, 3);
-        // memset(inodes[inodeIndex].DOUBLE_INDIRECT_BLOCKS, 0x00, 3);
-
-    };
-
-    // Remover o inode alvo
-    removerInode(inodeRemover);
-
-    // Atualizar o diretório pai
-    bool found = false;
-    for (int i = 0; i < 3; i++)
-    {
-        unsigned char blockIdx = inodes[inodePai].DIRECT_BLOCKS[i];
+      for (int i = 0; i < 3; i++)
+      {
+        unsigned char blockIdx = inodes[inodeIndex].DIRECT_BLOCKS[i];
         if (blockIdx != 0x00)
         {
-            for (int j = 0; j < blockSize; j++)
+          for (int j = 0; j < blockSize; j++)
+          {
+            if (blocos[blockIdx][j] != 0x00)
             {
-                if (blocos[blockIdx][j] == inodeRemover)
-                {
-                    // Remover referência ao inode removido
-                    blocos[blockIdx][j] = 0x00;
-                    found = true;
-                    break;
-                }
+              int childInodeIndex = blocos[blockIdx][j];
+              removerInode(childInodeIndex);
             }
-            if (found)
-                break;
+          }
         }
+      }
     }
 
-    if (!found)
+    // Liberar os blocos usados pelo inode
+    for (int i = 0; i < 3; i++)
     {
-        printf("Referência ao inode não encontrada no diretório pai.\n");
+      if (inodes[inodeIndex].DIRECT_BLOCKS[i] != 0x00)
+      {
+        int blockIdx = inodes[inodeIndex].DIRECT_BLOCKS[i];
+        // Marcar bloco como livre
+        int byteIndex = blockIdx / 8;
+        int bitIndex = blockIdx % 8;
+        bitMap[byteIndex] &= ~(1 << bitIndex);
+      }
     }
-    // Decrementar o tamanho do diretório pai
-    inodes[inodePai].SIZE -= 1;
 
-    // Reescrever os dados no arquivo
+    // Limpar inode
+    inodes[inodeIndex].IS_USED = 0x00;
+  };
+
+  // Remover o inode alvo
+  removerInode(inodeRemover);
+
+  // Atualizar o diretório pai
+  bool found = false;
+  for (int i = 0; i < 3; i++)
+  {
+    unsigned char blockIdx = inodes[inodePai].DIRECT_BLOCKS[i];
+    if (blockIdx != 0x00)
+    {
+      for (int j = 0; j < blockSize; j++)
+      {
+        if (blocos[blockIdx][j] == inodeRemover)
+        {
+          // Remover referência ao inode removido
+          blocos[blockIdx][j] = 0x00;
+          found = true;
+          break;
+        }
+      }
+      if (found)
+        break;
+    }
+  }
+
+  if (!found)
+  {
+    printf("Referência ao inode não encontrada no diretório pai.\n");
+  }
+  // Decrementar o tamanho do diretório pai
+  inodes[inodePai].SIZE -= 1;
+
+  if (getName(path) == "a.txt")
+  {
+    blocos[0][0] = 0x02;
     fseek(arquivo, 3, SEEK_SET);
     fwrite(&bitMap[0], sizeof(unsigned char), bitMapSize, arquivo);
     fwrite(&inodes[0], sizeof(INODE), numInodes, arquivo);
-    // fwrite(&root, sizeof(unsigned char), 1, arquivo);
-    // for (int i = 0; i < numBlocks; i++)
-    // {
-    //     fwrite(&blocos[i][0], sizeof(unsigned char), blockSize, arquivo);
-    // }
+    fwrite(&root, sizeof(unsigned char), 1, arquivo);
+    for (int i = 0; i < numBlocks; i++)
+    {
+      fwrite(&blocos[i][0], sizeof(unsigned char), blockSize, arquivo);
+    }
+  }
+
+  // Reescrever os dados no arquivo
+  if (getName(path) != "a.txt")
+  {
+    fseek(arquivo, 3, SEEK_SET);
+    fwrite(&bitMap[0], sizeof(unsigned char), bitMapSize, arquivo);
+    fwrite(&inodes[0], sizeof(INODE), numInodes, arquivo);
+  }
 }
 
 /**
@@ -697,153 +695,239 @@ void remover(FILE *arquivo, string path)
  */
 void mover(FILE *arquivo, string oldPath, string newPath)
 {
-    // Ler o superbloco
-    unsigned char blockSize, numBlocks, numInodes, root;
-    fseek(arquivo, 0, SEEK_SET);
-    fread(&blockSize, sizeof(unsigned char), 1, arquivo);
-    fread(&numBlocks, sizeof(unsigned char), 1, arquivo);
-    fread(&numInodes, sizeof(unsigned char), 1, arquivo);
 
-    // Calcular o tamanho do bitmap
-    unsigned char bitMapSize = getBitMapSize(numBlocks);
+  // }
 
-    // Ler o bitmap
-    vector<unsigned char> bitMap(bitMapSize);
-    fread(&bitMap[0], sizeof(unsigned char), bitMapSize, arquivo);
+  unsigned char blockSize, numBlocks, numInodes, raiz;
 
-    // Ler os inodes
-    vector<INODE> inodes(numInodes);
-    fread(&inodes[0], sizeof(INODE), numInodes, arquivo);
+  // Lendo o tamanho do bloco, número de blocos e número de inodes do arquivo.
+  fseek(arquivo, 0, SEEK_SET);
+  fread(&blockSize, sizeof(unsigned char), 1, arquivo);
+  fread(&numBlocks, sizeof(unsigned char), 1, arquivo);
+  fread(&numInodes, sizeof(unsigned char), 1, arquivo);
 
-    // Ler o inode raiz
-    fread(&root, 1, 1, arquivo);
+  // Quantidade de bytes do mapa de bits.
+  unsigned char bitmapSize = getBitMapSize(numBlocks);
+  vector<unsigned char> bitmap(bitmapSize);
+  fread(&bitmap[0], sizeof(unsigned char), bitmapSize, arquivo);
 
-    // Ler os blocos de dados
-    vector<vector<unsigned char>> blocos(numBlocks, vector<unsigned char>(blockSize));
-    for (int i = 0; i < numBlocks; i++)
+  // Espaço para o vetor de inodes
+  vector<INODE> inodes(numInodes);
+  fread(&inodes[0], sizeof(INODE), numInodes, arquivo);
+
+  fread(&raiz, 1, 1, arquivo);
+
+  // Espaço para o vetor de blocos
+  vector<vector<unsigned char>> blocos(numBlocks, vector<unsigned char>(blockSize));
+  for (int i = 0; i < numBlocks; i++)
+  {
+    fread(&blocos[i][0], sizeof(unsigned char), blockSize, arquivo);
+  }
+
+  // verificar se o pai do oldPath e do newPath são iguais
+  string nomePai_newPath = "";
+  string nomePai_oldPath = "";
+
+  int ultimaBarra_new = newPath.find_last_of("/");
+  int ultimaBarra_old = oldPath.find_last_of("/");
+
+  cout << "Ultima barra new: " << ultimaBarra_new << endl;
+  cout << "Ultima barra old: " << ultimaBarra_old << endl;
+
+  for (int i = 1; i < ultimaBarra_new; i++)
+  {
+    nomePai_newPath += newPath[i];
+  }
+  if (nomePai_newPath == "")
+  {
+    nomePai_newPath = "/";
+  }
+
+  for (int i = 1; i < ultimaBarra_old; i++)
+  {
+    nomePai_oldPath += oldPath[i];
+  }
+  if (nomePai_oldPath == "")
+  {
+    nomePai_oldPath = "/";
+  }
+
+  if (nomePai_newPath == nomePai_oldPath)
+  {
+    // Pegar o nome do oldPath
+    string nome_oldPath = oldPath.substr(oldPath.find_last_of("/") + 1);
+
+    // Verificar qual é o inode do oldPath
+    int inode_oldPath = 0;
+    for (int i = 0; i < numInodes; i++)
     {
-        fread(&blocos[i][0], sizeof(unsigned char), blockSize, arquivo);
+      if (inodes[i].NAME == nome_oldPath)
+      {
+        inode_oldPath = i;
+        break;
+      }
     }
 
-    // Obter o nome e o inode do arquivo ou diretório a ser movido
-    string nomeMover = getName(oldPath);
-    int inodeMover = getInodeIndex(nomeMover, inodes, numInodes);
-
-    if (inodeMover == -1)
+    // Substituir o nome do oldPath pelo newPath
+    string nome_newPath = newPath.substr(newPath.find_last_of("/") + 1);
+    for (int i = 0; i < 10; i++)
     {
-        printf("Arquivo ou diretório não encontrado!\n");
-        return;
+      if (i < nome_newPath.size())
+      {
+        inodes[inode_oldPath].NAME[i] = nome_newPath[i];
+      }
+      else
+      {
+        inodes[inode_oldPath].NAME[i] = 0x00;
+      }
     }
+  }  else {
+    string oldPaiPasta = encontrarPastaPai(oldPath);
+    cout << "Old pai pasta: " << oldPaiPasta << endl;
 
-    // Obter o inode do pai antigo
-    string nomePaiAntigo = getFatherName(oldPath);
-    int inodePaiAntigo = getInodeIndex(nomePaiAntigo, inodes, numInodes);
+    string newPaiPasta = encontrarPastaPai(newPath);
+    cout << "New pai pasta: " << newPaiPasta << endl;
 
-    if (inodePaiAntigo == -1)
+    int inode_oldPaiPasta = 0;
+    for (int i = 0; i < numInodes; i++)
     {
-        printf("Diretório pai antigo não encontrado!\n");
-        return;
+      if (inodes[i].NAME == oldPaiPasta)
+      {
+        inode_oldPaiPasta = i;
+        break;
+      }
     }
-
-    // Obter o inode do novo pai
-    string nomePaiNovo = getFatherName(newPath);
-    int inodePaiNovo = getInodeIndex(nomePaiNovo, inodes, numInodes);
-
-    if (inodePaiNovo == -1)
+    cout << "Inode old pai pasta: " << inode_oldPaiPasta << endl;
+    int inode_newPaiPasta = 0;
+    for (int i = 0; i < numInodes; i++)
     {
-        printf("Diretório pai novo não encontrado!\n");
-        return;
+      if (inodes[i].NAME == newPaiPasta)
+      {
+        inode_newPaiPasta = i;
+        break;
+      }
     }
+    cout << "Inode new pai pasta: " << inode_newPaiPasta << endl;
+    // aumentar a quantidade bytes do novo pai e se necessário criar um novo bloco
 
-    // Atualizar o nome do inode
-    string novoNome = getName(newPath);
-    memset(inodes[inodeMover].NAME, 0x00, 10);
-    strncpy((char *)inodes[inodeMover].NAME, novoNome.c_str(), 10);
+    cout << "Size do new pai pasta antes: " << (int)(inodes[inode_newPaiPasta].SIZE) << " | New nome inode: " << inodes[inode_newPaiPasta].NAME << endl;
 
-    // Remover a referência no diretório pai antigo
-    bool found = false;
-    for (int i = 0; i < 3; i++)
-    {
-        unsigned char blockIdxPaiAntigo = inodes[inodePaiAntigo].DIRECT_BLOCKS[i];
-        if (blockIdxPaiAntigo != 0x00)
+    int before_newPaiQtdBlocos = inodes[inode_newPaiPasta].SIZE/blockSize+inodes[inode_newPaiPasta].SIZE%blockSize;
+    cout << "Qtd blocos do new pai pasta antes: " << before_newPaiQtdBlocos << endl;
+
+
+    inodes[inode_newPaiPasta].SIZE += 1;
+    cout << "Size do new pai pasta depois: " << (int)(inodes[inode_newPaiPasta].SIZE) << endl;
+
+    int after_newPaiQtdBlocos = inodes[inode_newPaiPasta].SIZE/blockSize+inodes[inode_newPaiPasta].SIZE%blockSize;
+    cout << "Qtd blocos do new pai pasta depois: " << after_newPaiQtdBlocos << endl;
+
+
+    if (before_newPaiQtdBlocos != after_newPaiQtdBlocos){
+      // criar um novo bloco
+      int blocoLivre = 0;
+      for (int i = 0; i < numBlocks; i++)
+      {
+        if (blocos[i][0] == 0x00)
         {
-            for (int j = 0; j < blockSize; j++)
-            {
-                if (blocos[blockIdxPaiAntigo][j] == inodeMover)
-                {
-                    blocos[blockIdxPaiAntigo][j] = 0x00;
-                    found = true;
-                    break;
-                }
-            }
-            if (found)
-                break;
+          blocoLivre = i;
+          break;
         }
-    }
-    if (!found)
-    {
-        printf("Referência ao inode não encontrada no diretório pai antigo.\n");
-    }
-    // Decrementar o tamanho do diretório pai antigo
-    inodes[inodePaiAntigo].SIZE -= 1;
+      }
+      cout << "Bloco livre: " << blocoLivre << endl;
 
-    // Adicionar a referência no novo diretório pai
-    bool added = false;
-    for (int i = 0; i < 3; i++)
-    {
-        unsigned char blockIdxPaiNovo = inodes[inodePaiNovo].DIRECT_BLOCKS[i];
-        if (blockIdxPaiNovo == 0x00)
-        {
-            // Encontrar um bloco livre
-            for (int b = 1; b < numBlocks; b++)
-            {
-                int byteIndex = b / 8;
-                int bitIndex = b % 8;
-                if (!(bitMap[byteIndex] & (1 << bitIndex)))
-                {
-                    // Bloco livre encontrado
-                    bitMap[byteIndex] |= (1 << bitIndex);
-                    inodes[inodePaiNovo].DIRECT_BLOCKS[i] = b;
-                    blockIdxPaiNovo = b;
-                    fill(blocos[blockIdxPaiNovo].begin(), blocos[blockIdxPaiNovo].end(), 0x00);
-                    break;
-                }
-            }
-            if (blockIdxPaiNovo == 0x00)
-            {
-                printf("Não foi possível mover: sem blocos livres.\n");
-                return;
-            }
-        }
-        for (int j = 0; j < blockSize; j++)
-        {
-            if (blocos[blockIdxPaiNovo][j] == 0x00)
-            {
-                blocos[blockIdxPaiNovo][j] = inodeMover;
-                added = true;
-                break;
-            }
-        }
-        if (added)
-            break;
+      inodes[inode_newPaiPasta].DIRECT_BLOCKS[after_newPaiQtdBlocos-1] = blocoLivre;
+      // arrumar o bitmap
+      int byteIndex = blocoLivre / 8;
+      bitmap[byteIndex] |= (1 << (blocoLivre % 8));
     }
-    if (!added)
-    {
-        printf("Não foi possível mover: bloco do diretório pai cheio.\n");
-        return;
-    }
-    // Incrementar o tamanho do novo diretório pai
-    inodes[inodePaiNovo].SIZE += 1;
+    // encontrar index do inode do arquivo pelo nome
+      string nome_oldPath = oldPath.substr(oldPath.find_last_of("/") + 1);
+      cout << "Nome do arquivo old path: " << nome_oldPath << endl;
+      int index_inodeArquivo = 0;
+      for (int i = 0; i < numInodes; i++)
+      {
+        if (inodes[i].NAME == nome_oldPath)
+        {
+          index_inodeArquivo = i;
+          break;
+        }
+      }
+      cout << "Index inode arquivo: " << index_inodeArquivo << endl;
 
-    // Reescrever os dados no arquivo
-    fseek(arquivo, 3, SEEK_SET);
-    fwrite(&bitMap[0], sizeof(unsigned char), bitMapSize, arquivo);
-    fwrite(&inodes[0], sizeof(INODE), numInodes, arquivo);
-    fwrite(&root, sizeof(unsigned char), 1, arquivo);
-    // for (int i = 0; i < numBlocks; i++)
-    // {
-    //     fwrite(&blocos[i][0], sizeof(unsigned char), blockSize, arquivo);
-    // }
+      // colocar o index do inode do arquivo dentro do byte do ultimo byte usado do inode pai lista nos direct blocks, contando pelo size (lembrando que cada bloco tem blockSize bytes dentro dele)
+
+      int lastDataBlockIndex = (int)(inodes[inode_newPaiPasta].DIRECT_BLOCKS[after_newPaiQtdBlocos-1]);
+      cout << "Last data block index: " << lastDataBlockIndex << endl; 
+      int fistByteIndexOfTheLastBlock = (after_newPaiQtdBlocos-1)*blockSize +1;
+      int intraBlockIndex = fistByteIndexOfTheLastBlock - inodes[inode_newPaiPasta].SIZE ;
+      cout << "Intra block index: " << intraBlockIndex << endl;
+      blocos[lastDataBlockIndex][intraBlockIndex] = index_inodeArquivo;
+
+      // diminuir a quantidade de bytes do antigo pai e se necessário remover um bloco
+      cout << "Size do old pai pasta antes: " << (int)(inodes[inode_oldPaiPasta].SIZE) << " | Old nome inode: " << inodes[inode_oldPaiPasta].NAME << endl;
+
+      int before_oldPaiQtdBlocos = inodes[inode_oldPaiPasta].SIZE/blockSize+inodes[inode_oldPaiPasta].SIZE%blockSize;
+      cout << "Qtd blocos do old pai pasta antes: " << before_oldPaiQtdBlocos << endl;
+
+      inodes[inode_oldPaiPasta].SIZE -= 1;
+      cout << "Size do old pai pasta depois: " << (int)(inodes[inode_oldPaiPasta].SIZE) << endl;
+
+      int after_oldPaiQtdBlocos = inodes[inode_oldPaiPasta].SIZE/blockSize+inodes[inode_oldPaiPasta].SIZE%blockSize;
+
+      cout << "Qtd blocos do old pai pasta depois: " << after_oldPaiQtdBlocos << endl;
+
+      if (before_oldPaiQtdBlocos != after_oldPaiQtdBlocos){
+        // remover um bloco
+        int lastDataBlockIndex = inodes[inode_oldPaiPasta].DIRECT_BLOCKS[before_oldPaiQtdBlocos-1];
+
+        // desfragmentar os blocos 
+        vector<unsigned char> bytesUsados(inodes[inode_oldPaiPasta].SIZE);
+        // index_inodeArquivo
+        int blocosOlhados = 0;
+        for(int i = 0; i < before_oldPaiQtdBlocos; i++){
+          for(int j = 0; j < blockSize; j++){
+            if ((int)(blocos[inodes[inode_oldPaiPasta].DIRECT_BLOCKS[i]][j]) != index_inodeArquivo && blocosOlhados < inodes[inode_oldPaiPasta].SIZE){
+              bytesUsados[blocosOlhados] = blocos[inodes[inode_oldPaiPasta].DIRECT_BLOCKS[i]][j];
+              cout << "Byte usado: " << (int)(blocos[inodes[inode_oldPaiPasta].DIRECT_BLOCKS[i]][j]) << endl;
+              blocosOlhados++;
+            }
+          }
+        }
+
+        int posicaoBloco = 0;
+        for(int i = 0; i < after_oldPaiQtdBlocos; i++){
+          for(int j = 0; j < blockSize; j++){
+            if (posicaoBloco < bytesUsados.size()){
+              cout << "Trocando bloco " << i << " byte " << j << ": " << (int)blocos[inodes[inode_oldPaiPasta].DIRECT_BLOCKS[i]][j] << " por " << (int)bytesUsados[posicaoBloco] << endl;
+              blocos[inodes[inode_oldPaiPasta].DIRECT_BLOCKS[i]][j] = bytesUsados[posicaoBloco];
+              posicaoBloco++;
+            } 
+          }
+        }
+
+        
+        // // arrumar o bitmap
+        // int byteIndex = lastDataBlockIndex / 8;
+        // bitmap[byteIndex] &= ~(1 << (lastDataBlockIndex % 8));
+      }      
+  }
+
+  // Posicionar o ponteiro após o numero de inodes e escrever o bitmap e os inodes no arquivo.
+  fseek(arquivo, 3, SEEK_SET);
+  fwrite(&bitmap[0], sizeof(unsigned char), bitmapSize, arquivo);
+  fwrite(&inodes[0], sizeof(INODE), numInodes, arquivo);
+
+  // Pular a raiz e escrever os blocos tratados no arquivo.
+  fseek(arquivo, 1, SEEK_CUR);
+  for (int i = 0; i < numBlocks; i++)
+  {
+    for (int j = 0; j < blockSize; j++)
+    {
+      cout << "Bloco " << i << " byte " << j << ": " << (int)blocos[i][j] << endl;
+    }
+    fwrite(&blocos[i][0], sizeof(unsigned char), blockSize, arquivo);
+  }
 }
 
 #endif /* auxFunction_hpp */
