@@ -120,35 +120,41 @@ int getInodeIndex(string nome, vector<INODE> inodes, int numInodes)
 }
 
 // Função para encontrar a pasta pai do arquivo
-std::string encontrarPastaPai(const std::string& caminho) {
-    // Remove quaisquer barras finais
-    std::string caminho_clean = caminho;
-    while (!caminho_clean.empty() && caminho_clean.back() == '/') {
-        caminho_clean.pop_back();
-    }
+std::string encontrarPastaPai(const std::string &caminho)
+{
+  // Remove quaisquer barras finais
+  std::string caminho_clean = caminho;
+  while (!caminho_clean.empty() && caminho_clean.back() == '/')
+  {
+    caminho_clean.pop_back();
+  }
 
-    // Encontra a posição da última barra '/'
-    size_t pos_last_slash = caminho_clean.find_last_of('/');
-    if (pos_last_slash == std::string::npos) {
-        // Sem barra encontrada, retorna string vazia ou comportamento adequado
-        return "";
-    } else if (pos_last_slash == 0) {
-        // Se a última barra está na posição 0, a pasta pai é a raiz "/"
-        return "/";
-    }
+  // Encontra a posição da última barra '/'
+  size_t pos_last_slash = caminho_clean.find_last_of('/');
+  if (pos_last_slash == std::string::npos)
+  {
+    // Sem barra encontrada, retorna string vazia ou comportamento adequado
+    return "";
+  }
+  else if (pos_last_slash == 0)
+  {
+    // Se a última barra está na posição 0, a pasta pai é a raiz "/"
+    return "/";
+  }
 
-    // Remove o último componente (arquivo ou diretório)
-    std::string semArquivo = caminho_clean.substr(0, pos_last_slash);
+  // Remove o último componente (arquivo ou diretório)
+  std::string semArquivo = caminho_clean.substr(0, pos_last_slash);
 
-    // Encontra a posição da segunda última barra '/'
-    size_t pos_second_last_slash = semArquivo.find_last_of('/', pos_last_slash - 1);
-    if (pos_second_last_slash == std::string::npos) {
-        // Se não houver segunda barra, retorna o diretório após a primeira barra
-        return semArquivo.substr(1, pos_last_slash - 1); // Exemplo: "dec"
-    }
+  // Encontra a posição da segunda última barra '/'
+  size_t pos_second_last_slash = semArquivo.find_last_of('/', pos_last_slash - 1);
+  if (pos_second_last_slash == std::string::npos)
+  {
+    // Se não houver segunda barra, retorna o diretório após a primeira barra
+    return semArquivo.substr(1, pos_last_slash - 1); // Exemplo: "dec"
+  }
 
-    // Extrai o nome da pasta pai entre a segunda e a última barra
-    return semArquivo.substr(pos_second_last_slash + 1, pos_last_slash - pos_second_last_slash - 1); // Exemplo: "subpasta"
+  // Extrai o nome da pasta pai entre a segunda e a última barra
+  return semArquivo.substr(pos_second_last_slash + 1, pos_last_slash - pos_second_last_slash - 1); // Exemplo: "subpasta"
 }
 
 /**
@@ -781,7 +787,9 @@ void mover(FILE *arquivo, string oldPath, string newPath)
         inodes[inode_oldPath].NAME[i] = 0x00;
       }
     }
-  }  else {
+  }
+  else
+  {
     string oldPaiPasta = encontrarPastaPai(oldPath);
     cout << "Old pai pasta: " << oldPaiPasta << endl;
 
@@ -812,18 +820,17 @@ void mover(FILE *arquivo, string oldPath, string newPath)
 
     cout << "Size do new pai pasta antes: " << (int)(inodes[inode_newPaiPasta].SIZE) << " | New nome inode: " << inodes[inode_newPaiPasta].NAME << endl;
 
-    int before_newPaiQtdBlocos = inodes[inode_newPaiPasta].SIZE/blockSize+inodes[inode_newPaiPasta].SIZE%blockSize;
+    int before_newPaiQtdBlocos = inodes[inode_newPaiPasta].SIZE / blockSize + inodes[inode_newPaiPasta].SIZE % blockSize;
     cout << "Qtd blocos do new pai pasta antes: " << before_newPaiQtdBlocos << endl;
-
 
     inodes[inode_newPaiPasta].SIZE += 1;
     cout << "Size do new pai pasta depois: " << (int)(inodes[inode_newPaiPasta].SIZE) << endl;
 
-    int after_newPaiQtdBlocos = inodes[inode_newPaiPasta].SIZE/blockSize+inodes[inode_newPaiPasta].SIZE%blockSize;
+    int after_newPaiQtdBlocos = inodes[inode_newPaiPasta].SIZE / blockSize + inodes[inode_newPaiPasta].SIZE % blockSize;
     cout << "Qtd blocos do new pai pasta depois: " << after_newPaiQtdBlocos << endl;
 
-
-    if (before_newPaiQtdBlocos != after_newPaiQtdBlocos){
+    if (before_newPaiQtdBlocos != after_newPaiQtdBlocos)
+    {
       // criar um novo bloco
       int blocoLivre = 0;
       for (int i = 0; i < numBlocks; i++)
@@ -836,81 +843,89 @@ void mover(FILE *arquivo, string oldPath, string newPath)
       }
       cout << "Bloco livre: " << blocoLivre << endl;
 
-      inodes[inode_newPaiPasta].DIRECT_BLOCKS[after_newPaiQtdBlocos-1] = blocoLivre;
+      inodes[inode_newPaiPasta].DIRECT_BLOCKS[after_newPaiQtdBlocos - 1] = blocoLivre;
       // arrumar o bitmap
       int byteIndex = blocoLivre / 8;
       bitmap[byteIndex] |= (1 << (blocoLivre % 8));
     }
     // encontrar index do inode do arquivo pelo nome
-      string nome_oldPath = oldPath.substr(oldPath.find_last_of("/") + 1);
-      cout << "Nome do arquivo old path: " << nome_oldPath << endl;
-      int index_inodeArquivo = 0;
-      for (int i = 0; i < numInodes; i++)
+    string nome_oldPath = oldPath.substr(oldPath.find_last_of("/") + 1);
+    cout << "Nome do arquivo old path: " << nome_oldPath << endl;
+    int index_inodeArquivo = 0;
+    for (int i = 0; i < numInodes; i++)
+    {
+      if (inodes[i].NAME == nome_oldPath)
       {
-        if (inodes[i].NAME == nome_oldPath)
+        index_inodeArquivo = i;
+        break;
+      }
+    }
+    cout << "Index inode arquivo: " << index_inodeArquivo << endl;
+
+    // colocar o index do inode do arquivo dentro do byte do ultimo byte usado do inode pai lista nos direct blocks, contando pelo size (lembrando que cada bloco tem blockSize bytes dentro dele)
+
+    int lastDataBlockIndex = (int)(inodes[inode_newPaiPasta].DIRECT_BLOCKS[after_newPaiQtdBlocos - 1]);
+    cout << "Last data block index: " << lastDataBlockIndex << endl;
+    int fistByteIndexOfTheLastBlock = (after_newPaiQtdBlocos - 1) * blockSize + 1;
+    int intraBlockIndex = fistByteIndexOfTheLastBlock - inodes[inode_newPaiPasta].SIZE;
+    cout << "Intra block index: " << intraBlockIndex << endl;
+    blocos[lastDataBlockIndex][intraBlockIndex] = index_inodeArquivo;
+
+    // diminuir a quantidade de bytes do antigo pai e se necessário remover um bloco
+    cout << "Size do old pai pasta antes: " << (int)(inodes[inode_oldPaiPasta].SIZE) << " | Old nome inode: " << inodes[inode_oldPaiPasta].NAME << endl;
+
+    int before_oldPaiQtdBlocos = inodes[inode_oldPaiPasta].SIZE / blockSize + inodes[inode_oldPaiPasta].SIZE % blockSize;
+    cout << "Qtd blocos do old pai pasta antes: " << before_oldPaiQtdBlocos << endl;
+
+    inodes[inode_oldPaiPasta].SIZE -= 1;
+    cout << "Size do old pai pasta depois: " << (int)(inodes[inode_oldPaiPasta].SIZE) << endl;
+
+    int after_oldPaiQtdBlocos = inodes[inode_oldPaiPasta].SIZE / blockSize + inodes[inode_oldPaiPasta].SIZE % blockSize;
+
+    cout << "Qtd blocos do old pai pasta depois: " << after_oldPaiQtdBlocos << endl;
+
+    if (before_oldPaiQtdBlocos != after_oldPaiQtdBlocos)
+    {
+      // remover um bloco
+      int lastDataBlockIndex = inodes[inode_oldPaiPasta].DIRECT_BLOCKS[before_oldPaiQtdBlocos - 1];
+
+      // desfragmentar os blocos
+      vector<unsigned char> bytesUsados(inodes[inode_oldPaiPasta].SIZE);
+      // index_inodeArquivo
+      int blocosOlhados = 0;
+      for (int i = 0; i < before_oldPaiQtdBlocos; i++)
+      {
+        for (int j = 0; j < blockSize; j++)
         {
-          index_inodeArquivo = i;
-          break;
+          if ((int)(blocos[inodes[inode_oldPaiPasta].DIRECT_BLOCKS[i]][j]) != index_inodeArquivo && blocosOlhados < inodes[inode_oldPaiPasta].SIZE)
+          {
+            bytesUsados[blocosOlhados] = blocos[inodes[inode_oldPaiPasta].DIRECT_BLOCKS[i]][j];
+            cout << "Byte usado: " << (int)(blocos[inodes[inode_oldPaiPasta].DIRECT_BLOCKS[i]][j]) << endl;
+            blocosOlhados++;
+          }
         }
       }
-      cout << "Index inode arquivo: " << index_inodeArquivo << endl;
 
-      // colocar o index do inode do arquivo dentro do byte do ultimo byte usado do inode pai lista nos direct blocks, contando pelo size (lembrando que cada bloco tem blockSize bytes dentro dele)
-
-      int lastDataBlockIndex = (int)(inodes[inode_newPaiPasta].DIRECT_BLOCKS[after_newPaiQtdBlocos-1]);
-      cout << "Last data block index: " << lastDataBlockIndex << endl; 
-      int fistByteIndexOfTheLastBlock = (after_newPaiQtdBlocos-1)*blockSize +1;
-      int intraBlockIndex = fistByteIndexOfTheLastBlock - inodes[inode_newPaiPasta].SIZE ;
-      cout << "Intra block index: " << intraBlockIndex << endl;
-      blocos[lastDataBlockIndex][intraBlockIndex] = index_inodeArquivo;
-
-      // diminuir a quantidade de bytes do antigo pai e se necessário remover um bloco
-      cout << "Size do old pai pasta antes: " << (int)(inodes[inode_oldPaiPasta].SIZE) << " | Old nome inode: " << inodes[inode_oldPaiPasta].NAME << endl;
-
-      int before_oldPaiQtdBlocos = inodes[inode_oldPaiPasta].SIZE/blockSize+inodes[inode_oldPaiPasta].SIZE%blockSize;
-      cout << "Qtd blocos do old pai pasta antes: " << before_oldPaiQtdBlocos << endl;
-
-      inodes[inode_oldPaiPasta].SIZE -= 1;
-      cout << "Size do old pai pasta depois: " << (int)(inodes[inode_oldPaiPasta].SIZE) << endl;
-
-      int after_oldPaiQtdBlocos = inodes[inode_oldPaiPasta].SIZE/blockSize+inodes[inode_oldPaiPasta].SIZE%blockSize;
-
-      cout << "Qtd blocos do old pai pasta depois: " << after_oldPaiQtdBlocos << endl;
-
-      if (before_oldPaiQtdBlocos != after_oldPaiQtdBlocos){
-        // remover um bloco
-        int lastDataBlockIndex = inodes[inode_oldPaiPasta].DIRECT_BLOCKS[before_oldPaiQtdBlocos-1];
-
-        // desfragmentar os blocos 
-        vector<unsigned char> bytesUsados(inodes[inode_oldPaiPasta].SIZE);
-        // index_inodeArquivo
-        int blocosOlhados = 0;
-        for(int i = 0; i < before_oldPaiQtdBlocos; i++){
-          for(int j = 0; j < blockSize; j++){
-            if ((int)(blocos[inodes[inode_oldPaiPasta].DIRECT_BLOCKS[i]][j]) != index_inodeArquivo && blocosOlhados < inodes[inode_oldPaiPasta].SIZE){
-              bytesUsados[blocosOlhados] = blocos[inodes[inode_oldPaiPasta].DIRECT_BLOCKS[i]][j];
-              cout << "Byte usado: " << (int)(blocos[inodes[inode_oldPaiPasta].DIRECT_BLOCKS[i]][j]) << endl;
-              blocosOlhados++;
-            }
+      int posicaoBloco = 0;
+      for (int i = 0; i < after_oldPaiQtdBlocos; i++)
+      {
+        for (int j = 0; j < blockSize; j++)
+        {
+          if (posicaoBloco < bytesUsados.size())
+          {
+            cout << "Trocando bloco " << i << " byte " << j << ": " << (int)blocos[inodes[inode_oldPaiPasta].DIRECT_BLOCKS[i]][j] << " por " << (int)bytesUsados[posicaoBloco] << endl;
+            blocos[inodes[inode_oldPaiPasta].DIRECT_BLOCKS[i]][j] = bytesUsados[posicaoBloco];
+            posicaoBloco++;
           }
         }
-
-        int posicaoBloco = 0;
-        for(int i = 0; i < after_oldPaiQtdBlocos; i++){
-          for(int j = 0; j < blockSize; j++){
-            if (posicaoBloco < bytesUsados.size()){
-              cout << "Trocando bloco " << i << " byte " << j << ": " << (int)blocos[inodes[inode_oldPaiPasta].DIRECT_BLOCKS[i]][j] << " por " << (int)bytesUsados[posicaoBloco] << endl;
-              blocos[inodes[inode_oldPaiPasta].DIRECT_BLOCKS[i]][j] = bytesUsados[posicaoBloco];
-              posicaoBloco++;
-            } 
-          }
-        }
-
-        
-        // // arrumar o bitmap
-        // int byteIndex = lastDataBlockIndex / 8;
-        // bitmap[byteIndex] &= ~(1 << (lastDataBlockIndex % 8));
-      }      
+      }
+      // arrumar o bitmap
+      if (after_oldPaiQtdBlocos != 0)
+      {
+        int byteIndex = lastDataBlockIndex / 8;
+        bitmap[byteIndex] &= ~(1 << (lastDataBlockIndex % 8));
+      }
+    }
   }
 
   // Posicionar o ponteiro após o numero de inodes e escrever o bitmap e os inodes no arquivo.
