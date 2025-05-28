@@ -1,0 +1,45 @@
+1- Se você ainda nao possui uma conta no keybase.io, crie uma.
+- Lembre-se de gerar um par de chaves PGP. Mais instruções em https://docs.crp.to/importpgp.html. Se você tiver problemas em instalar o GnuPG no Windows, você pode continuar sem utilizar chaves PGP e utilizar a aplicação desktop/mobile do Keybase.io
+
+
+2 - Utilize o keybase para cifrar uma mensagem cifrada e assinada contendo seu nome completo para o usuário https://keybase.io/gagliotti. Para isso, você pode utilizar a aplicação web do keybase.io (neste caso você deve usar uma chave PGP) ou a aplicação desktop/mobile.
+
+3 - Cole a mensagem cifrada em um arquivo .txt e submeta-o como resposta desta tarefa.
+
+
+O conteúdo do arquivo .txt deve ser algo parecido com dois tipos de resultados:
+
+a) Se você utilizou a aplicação web:  
+
+
+-----BEGIN PGP MESSAGE-----
+Version: Keybase OpenPGP v2.1.13
+Comment: https://keybase.io/crypto
+
+wcBMA20ahjOS1S66AQgAvSILEOVfY59Ope2ohXCEindHpxLsk5tGhGi0Q83N9YXq
+yD4FF3He+dRXdLNhpHeMTFB4ke45+tuv7T0HXJeGSMFPpjNPgXnxsnhfFwc3bcvL
+4HVNl96dK2zG3UPOkWwtEyRVqAdz4eNk31Fbcdmqc8iL3mzbHgmE+aokuAZqsf3y
+ORz7xgiu/wFHLvwb58wycPi4DF3yqJHHgEAP3ckawPIDRKX4N5eEJlDngqLhMUtI
+o+/U3Rdx92afz+Df7aNTeyg8IAueY5cL6TDEI9NF/1xZGvW9QyRON1ploNYrt9nw
+FzDCqHKF3cVTasZHUGCbq2s9J4tpwavBSaXlmtpbucHATANtGoYzktUuugEIAIMg
+/VzLTUBDIoY+6zsH/2oGc+c1BZIpQBPcczxUX3cPLvVt18lp+NlK2CtIKUTViZ1t
+LX8SBTIj95MsIvm3PliMMYJ899IkGmqyrufH6bPPMKXsWe+Yqm484qtc51mRirtW
+jl/C0Uit3+ShpNwB3MMEPGvP1ggXFUp0sc7mPAUKDCw/BD954KH7c0iHAe7+8i5F
+CJOpumwcEgXtkGlmZTBSTSU/dx4+mturv1ulmZAkSPoDQnZjR3f+va7otf8gUc4Q
+bSd72vuY4LTF11FxsMPCTAqUp3aiE2P99Be95v96zWaIlyJqYAMqo99Bwp5GVjmo
+9z8AF//sUqDKhdaFdbHSwLoBSLJAqJkkQdYnFsnBXBcmiFAx03+x2FE1n03XRfkD
+oFqTuPBc/n7pyF+4mo1XiPfsqdm3c+8H+PDiivFgCguv06CriM3k5oghG00RDDy2
+LBqxQekc+5qu0DSQeOwYHppYwhxzQnQwZzpfUB7lQ73FBofcm3muL38GVDkBR2gM
+h895lL7Y6h9dT0CZMoT7VZdYgCAOAlmJxZ/oOfls/vwyg4fa3KOq74IRb8ZzNIXJ
+G0VNUTCKufpsMqbEHtsLlANwptFXodhjUdPPBNSIsOLGwY95XicnRPaFrUCmFjat
+zvKw+R5DpbuC6zloq5UcpKZ38pgagkIVlQORS2mUnFBBv28gCpUxLqhX90t9D/rr
+IcClSyolqNCFwJmOmvM4V0cV0gyiVEN6IwJZOE/dtP5AX8Fm0pEBhZtCPg2E6x2d
+5PxLu7UqjAhGZG6TLtbm4ODtakaagO8wBp+XO5s+kWS+g+owfwQm7rBzKkIDpxEi
+XEYH8RPVJMcwG1c=
+=Zj0K
+-----END PGP MESSAGE-----
+
+b) Se você utilizou a aplicação desktop/mobile:
+
+BEGIN KEYBASE SALTPACK ENCRYPTED MESSAGE. kiPgBwdlv6bV9N8 dSkCcFVY51N3Gc4 HyDUA9pxJ9ClWHb pUwaxjCwhZJLEH4 ERSV8VtMLRWrVuv HUUIVVfIPmsSP8B l5OkzZnB08ECIft 62KhjHeTrgFV7LQ zShOThbMxMJJZZN beatDyUL5kNFQJr 8ptMyaNPIgIdEQ6 7MfhI17pID5Wh5u cpK98jVxIiHnqUm aX9AnTtwEXGE1Ib tWc1IiGqi4TPQ85 zid2IU8Y0KiDnha yVjhFkyqd3zAhO4 eQn6wqhWyMBOW9v Yq9XbvCgrE0Yo8z WHNYjclNhrbfs4s Ce8cHxJ6pQpYh5O LvpaPnZRrZK01RG VgCkm8w0LyHewZM hhVXKuchomkz8Ur STZPAIdXgPNatRa dngxgCzNGB3DEQz xIzfgQseMqae9iY A04P3ygZtsnQ174 ATIYHftJ3Ibygfw zl03tB5rOsdfMhY rf4brFIxuDjewzc UyKXWwR28xcVZaS Q1O8sazuMGRWyMM 4FCpV5luwuSoFJE 90rOTRLx9O6hjKf dlwXDUMkZ6AiHYd dxhXG6w3QHZ3OgI Sg7KoTqTI5Ucytm Dxw3WaX17aps8ul NoFiWujSlmDgxAZ 3BVUmZtzFBUUtnq oZvkxbSpcnnKq8x vPginXvThHan8aD GmS1n9ji4JBizrp 0B63INO5gctiYxJ dFVhvbIylWfx515 VkeCZt9Qr3CW5sk IF1wM9XH. END KEYBASE SALTPACK ENCRYPTED MESSAGE.
+

@@ -922,8 +922,9 @@ void mover(FILE *arquivo, string oldPath, string newPath)
       // arrumar o bitmap
       if (after_oldPaiQtdBlocos != 0)
       {
-        int byteIndex = lastDataBlockIndex / 8;
-        bitmap[byteIndex] &= ~(1 << (lastDataBlockIndex % 8));
+        int blocoLivre = inodes[inode_oldPaiPasta].DIRECT_BLOCKS[before_oldPaiQtdBlocos - 1];
+        int byteIndex = blocoLivre / 8;
+        bitmap[byteIndex] &= ~(1 << (blocoLivre % 8));
       }
     }
   }
